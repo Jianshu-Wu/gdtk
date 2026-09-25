@@ -27,20 +27,42 @@ import lmr.globalconfig;
 import lmr.globaldata;
 import lmr.sfluidblock;
 
+// Stencil near boundary (eg. east boundary)
+// 
+//            +------+
+//            | i+1  |
+// +----+-----+------+
+// | j-2| j-1 |  i   | gc0
+// +----+-----+------+
+//            | i-1  |
+//            +------+
+//
+
 class GhostCellCharacteristic : GhostCellEffect {
 public:
     // Perhaps here need distinguish this BC is for north or east by:
     // BoundaryCondition bc = blk.bc[which_boundary];
     //     if (bc.outsigns[f.i_bndry] == 1) and ()
     @nogc
-    override void apply_apply_structured_grid(double t, int gtl, int ftl)
+    override void apply_structured_grid(double t, int gtl, int ftl)
     {
         auto blk = cast(SFluidBlock) this.blk;
         assert(blk !is null, "Oops, this should be an SFluidBlock object.");
         assert(blk.n_ghost_cell_layers == 2, "Oops, the ghost cell layers should be 2 for this characteristic BC");
         BoundaryCondition bc = blk.bc[which_boundary];
         foreach (i, f; bc.faces) {
-            foreach (n; 0 .. blk.n_ghost_cell_layers) {
+            FluidFVCell c_i, c_im1, c_ip1, c_jm1, c_jm2;
+            if (bc.outsigns[i] == 1) {
+                c_i = f.left_cells[0];
+                c_jm1 = f.left_cells[1];
+                c_jm2 = ...;
+                // Think on when i+1 greater than imax
+                // Think on when i-1 less than imin
+                c_ip1 = bc.faces[i+1].left_cells[0];
+                c_im1 = bc.faces[i-1].left_cells[0];
+                
+            }
+            foreach (n; 0 .xx. blk.n_ghost_cell_layers) {
                 FluidFVCell Cell1, ghost1, ghost2;
                 if (bc.outsigns[i] == 1) {
                     Cell1 = f.left_cells[0]; ghost1 = f.right_cell[0]; ghost2 = f.right_cell[1];
@@ -58,7 +80,16 @@ private:
     //     local_v = sqrt(fs.vel.x*fs.vel.x + fs.vel.y*fs.vel.y + fs.vel.z*fs.vel.z);
     //     local_m = local_v / fs.gas.a;
     // }
-    
+    @nogc
+    void derivative_for_wave(FlowState* fs0, FlowState* fs1, FlowState* fs2)
+    {
+        // Here to find the derivative for L2 ~ L4
+        drhodx = fs0.gas.rho - 4*(fs1.gas.rho) + 3*fs2.gas.rho;
+        dpdx = fs0.gas.p - 4*(fs1.gas.p) + 3*fs2.gas.p;
+        dudx = fs0.gas.u - 4*(fs1.gas.u) + 3*fs2.gas.u;
+        dvdx = fs0.gas.v - 4*(fs1.gas.v) + 3*fs2.gas.v;
+    }
+
     @nogc
     void characteristic_condition(FlowState* fs0, FlowState* fs1, FlowState* fs2)
     {
@@ -80,7 +111,7 @@ private:
     }
 
     @nogc
-    void linear_interpolation()
+    void primitive()
     {
 
     }
