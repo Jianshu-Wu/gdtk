@@ -56,7 +56,27 @@ public:
         this.p_target = ptarget;
         this.l_x = lx;
     }
-    @nogc
+
+    // @nogc
+    override void apply_for_interface_unstructured_grid(double t, int gtl, int ftl, FVInterface f)
+    {
+    throw new Error("This Characteristic BC only working for structure grid.");
+    }
+    
+    // @nogc
+    override void apply_unstructured_grid(double t, int gtl, int ftl)
+    {
+    throw new Error("This Characteristic BC only working for structure grid.");
+    }
+
+    // @nogc
+    override void apply_for_interface_structured_grid(double t, int gtl, int ftl, FVInterface f)
+    {
+        
+        throw new Error("This Characteristic BC only working for structure grid.");
+     }
+
+    // @nogc
     override void apply_structured_grid(double t, int gtl, int ftl)
     {
         size_t[3] ijk;
