@@ -14,7 +14,7 @@
 //
 // In this stage, only test for east
 
-module bc.ghost_cell_effect.characteristic_bc;
+module lmr.bc.ghost_cell_effect.characteristic_bc;
 
 import std.conv;
 import std.json;
@@ -80,11 +80,12 @@ public:
     override void apply_structured_grid(double t, int gtl, int ftl)
     {
         size_t[3] ijk;
-        size_t f_tmp_idx;
+        // size_t f_tmp_idx;
         FVInterface f_tmp;
-        FVCell c_i, c_im1, c_im2, c_jp1, c_jm1, gc0, gc1;
+        FluidFVCell c_i, c_im1, c_im2, c_jp1, c_jm1, gc0, gc1;
+        charac_deriv cd;
         auto gmodel = blk.myConfig.gmodel;
-        number gamma;
+        double gamma;
         
         auto blk = cast(SFluidBlock) this.blk;
         assert(blk !is null, "Oops, this should be an SFluidBlock object.");
@@ -107,8 +108,8 @@ public:
                 c_jm1 = bc.faces[f_idx-1].left_cells[0];
                 double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
                 double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].x.re;
-                charac_deriv(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, dx, dy);
-                characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs);
+                gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
+                characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
                 break;
             case Face.north, Face.south, Face.west, Face.top, Face.bottom:
                 throw new Error("Characteristic BC not implemented for boundary.");
@@ -120,7 +121,6 @@ public:
 
 private:
     // double p_target, l_x;
-
     // this(int id, int boundary, double ptarget, double lx)
     // {
     //     super(id, boundary, "characteristic_bc");
@@ -141,12 +141,16 @@ private:
         double Dvdx;
     }
     @nogc
-    void gradient(FlowState fsi0j0, FlowState fsim1j0, FlowState fsim2j0,
-                  FlowState fsi0j1, FlowState fsi0jm1, double gamma, double dx, double dy,
+    void gradient(FlowState* fsi0j0, FlowState* fsim1j0, FlowState* fsim2j0,
+                  FlowState* fsi0j1, FlowState* fsi0jm1, double gamma, double dx, double dy,
                   out charac_deriv cd)
     {
         immutable double sigma = 0.25;
-
+        // From Boundary Conditions for Direct Simulations of
+        // Compressible Viscous Flows, Poinsot and Lele, most case the beta can be 1.
+        // But here we first follow the paper from Motheau et el.
+        immutable double beta = 0;
+        
         // define p_target and l_x before or get the data from input file;
         
         // The only one unknown wave going to domain, named L1 from Eq. 36
@@ -169,16 +173,16 @@ private:
         // gradient for p, rho, u
         cd.Dpdx = 0.5 * ((L1/(fsi0j0.vel.x-fsi0j0.gas.a)) + (L4/(fsi0j0.vel.x+fsi0j0.gas.a)));
         cd.Drhodx = (1/fsi0j0.gas.a^^2) * ((L2/fsi0j0.vel.x) +
-         0.5*(L1/(fsi0j0.vel.u-fsi0j0.gas.a) + L4/(fsi0j0.vel.x+fsi0j0.gas.a)));
+         0.5*(L1/(fsi0j0.vel.x-fsi0j0.gas.a) + L4/(fsi0j0.vel.x+fsi0j0.gas.a)));
         cd.Dudx = ((L4/(fsi0j0.vel.x+fsi0j0.gas.a)) - (L1/(fsi0j0.vel.x-fsi0j0.gas.a))) 
          * (1 / (2*fsi0j0.gas.rho*fsi0j0.gas.a));  
-        cd.Dvdx = L3 / fsi0j0.vel.u;
+        cd.Dvdx = L3 / fsi0j0.vel.y;
 
         return;
     }
     @nogc
-    void characteristic(FlowState fsi0j0, FlowState fsim1j0,
-                   FlowState* gc0, FlowState* gc1, in charac_deriv cd)
+    void characteristic(FlowState* fsi0j0, FlowState* fsim1j0,
+                   FlowState* gc0, FlowState* gc1, double dx, in charac_deriv cd)
     {
         auto gmodel = blk.myConfig.gmodel;
         gc0.gas.rho = fsim1j0.gas.rho + 2 * dx * cd.Drhodx;
