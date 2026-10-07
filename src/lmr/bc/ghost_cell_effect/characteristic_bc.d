@@ -53,12 +53,12 @@ public:
 
    // double p_target, l_x;
 
-   //  this(int id, int boundary, double ptarget, double lx)
-   //  {
-   //      super(id, boundary, "characteristic_bc");
-   //      this.p_target = ptarget;
-   //      this.l_x = lx;
-   //  }
+     this(int id, int boundary)
+     {
+         super(id, boundary, "characteristic_bc");
+         // this.p_target = ptarget;
+         // this.l_x = lx;
+     }
 
     //From this moment, we giving the p_target and l_x.
    double p_target = 699.39;
@@ -113,8 +113,8 @@ public:
                 gamma = gmodel.gamma(c_i.fs.gas);
                 if (f_idx == 0 && f_idx == (nfaces-1)) {
                     // do something special at bottom corner
-                    gc0 = fs.copy_values_from(c_i.fs);
-                    gc1 = fs.copy_values_from(c_i.fs);
+                    gc0.fs.copy_values_from(c_i.fs);
+                    gc1.fs.copy_values_from(c_i.fs);
 
                 }
                 else {
