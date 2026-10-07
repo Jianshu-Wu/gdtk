@@ -21,6 +21,9 @@ import std.json;
 import std.math;
 import std.stdio;
 import std.string;
+import nm.number;
+import ntypes.complex;
+
 
 import gas;
 import geom;
@@ -48,15 +51,20 @@ import lmr.sfluidblock;
 class GhostCellCharacteristic : GhostCellEffect {
 public:
 
-    double p_target, l_x;
+   // double p_target, l_x;
 
-    this(int id, int boundary, double ptarget, double lx)
-    {
-        super(id, boundary, "characteristic_bc");
-        this.p_target = ptarget;
-        this.l_x = lx;
-    }
+   //  this(int id, int boundary, double ptarget, double lx)
+   //  {
+   //      super(id, boundary, "characteristic_bc");
+   //      this.p_target = ptarget;
+   //      this.l_x = lx;
+   //  }
 
+    //From this moment, we giving the p_target and l_x.
+   double p_target = 699.39;
+   double l_x = 0.5;
+    
+    
     // @nogc
     override void apply_for_interface_unstructured_grid(double t, int gtl, int ftl, FVInterface f)
     {
@@ -85,12 +93,13 @@ public:
         FluidFVCell c_i, c_im1, c_im2, c_jp1, c_jm1, gc0, gc1;
         charac_deriv cd;
         auto gmodel = blk.myConfig.gmodel;
-        double gamma;
+        number gamma;
         
         auto blk = cast(SFluidBlock) this.blk;
         assert(blk !is null, "Oops, this should be an SFluidBlock object.");
         assert(blk.n_ghost_cell_layers == 2, "Oops, the ghost cell layers should be 2 for this characteristic BC");
         BoundaryCondition bc = blk.bc[which_boundary];
+        size_t nfaces = bc.faces.length;
         foreach (f_idx, f; bc.faces) {
             final switch (which_boundary) { 
             case Face.east:
@@ -102,14 +111,20 @@ public:
                 f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                 c_im2 = f_tmp.left_cells[0];
                 gamma = gmodel.gamma(c_i.fs.gas);
-                // Think on when i+1 greater than imax
-                // Think on when i-1 less than imin
-                c_jp1 = bc.faces[f_idx+1].left_cells[0];
-                c_jm1 = bc.faces[f_idx-1].left_cells[0];
-                double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
-                double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].x.re;
-                gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
-                characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
+                if (f_idx == 0 && f_idx == (nfaces-1)) {
+                    // do something special at bottom corner
+                    gc0 = fs.copy_values_from(c_i.fs);
+                    gc1 = fs.copy_values_from(c_i.fs);
+
+                }
+                else {
+                    c_jp1 = bc.faces[f_idx+1].left_cells[0];
+                    c_jm1 = bc.faces[f_idx-1].left_cells[0];
+                    double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
+                    double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].x.re;
+                    gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
+                    characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
+                }
                 break;
             case Face.north, Face.south, Face.west, Face.top, Face.bottom:
                 throw new Error("Characteristic BC not implemented for boundary.");
@@ -135,14 +150,14 @@ private:
 
     struct charac_deriv
     {
-        double Dpdx;
-        double Drhodx;
-        double Dudx;
-        double Dvdx;
+        number Dpdx;
+        number Drhodx;
+        number Dudx;
+        number Dvdx;
     }
     @nogc
     void gradient(FlowState* fsi0j0, FlowState* fsim1j0, FlowState* fsim2j0,
-                  FlowState* fsi0j1, FlowState* fsi0jm1, double gamma, double dx, double dy,
+                  FlowState* fsi0j1, FlowState* fsi0jm1, number gamma, double dx, double dy,
                   out charac_deriv cd)
     {
         immutable double sigma = 0.25;
