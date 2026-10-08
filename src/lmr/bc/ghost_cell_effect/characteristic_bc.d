@@ -176,10 +176,10 @@ private:
         auto L1 = K * (fsi0j0.gas.p - p_target) - (1 - beta) * T1;
         
         // L2 ~ L4
-        auto drhodx = (fsim2j0.gas.rho - 4 * fsim1j0.gas.rho + fsi0j0.gas.rho) / (2 * dx);
-        auto dpdx = (fsim2j0.gas.p - 4 * fsim1j0.gas.p + fsi0j0.gas.p) / (2 * dx);
-        auto dudx = (fsim2j0.vel.x - 4 * fsim1j0.vel.x + fsi0j0.vel.x) / (2 * dx);
-        auto dvdx = (fsim2j0.vel.y - 4 * fsim1j0.vel.y + fsi0j0.vel.y) / (2 * dx);
+        auto drhodx = (fsim2j0.gas.rho - 4 * fsim1j0.gas.rho + 3 * fsi0j0.gas.rho) / (2 * dx);
+        auto dpdx = (fsim2j0.gas.p - 4 * fsim1j0.gas.p + 3 * fsi0j0.gas.p) / (2 * dx);
+        auto dudx = (fsim2j0.vel.x - 4 * fsim1j0.vel.x + 3 * fsi0j0.vel.x) / (2 * dx);
+        auto dvdx = (fsim2j0.vel.y - 4 * fsim1j0.vel.y + 3 * fsi0j0.vel.y) / (2 * dx);
 
         auto L2 = fsi0j0.vel.x * (fsi0j0.gas.a^^2 * drhodx - dpdx);
         auto L3 = fsi0j0.vel.x * dvdx;
