@@ -61,8 +61,8 @@ public:
      }
 
     //From this moment, we giving the p_target and l_x.
-   double p_target = 699.39;
-   double l_x = 0.5;
+   // double p_target = 1.0e4;
+   // double l_x = 0.5;
     
     
     // @nogc
@@ -169,11 +169,13 @@ private:
         // define p_target and l_x before or get the data from input file;
         
         // The only one unknown wave going to domain, named L1 from Eq. 36
-        auto T1 = fsi0j0.vel.y * (((fsi0j1.gas.p - fsi0jm1.gas.p) / (2*dy)) 
-          - fsi0j0.gas.rho * fsi0j0.gas.a * ((fsi0j1.vel.x - fsi0jm1.vel.x) / (2*dy)))
-          + gamma * fsi0j0.gas.p * ((fsi0j1.vel.y - fsi0jm1.vel.y) / (2*dy));
-        auto K = sigma * fsi0j0.gas.a * (1 - (sqrt(fsi0j0.vel.x^^2 + fsi0j0.vel.y^^2) / fsi0j0.gas.a)^^2) / l_x;
-        auto L1 = K * (fsi0j0.gas.p - p_target) - (1 - beta) * T1;
+        // This L1 only for subsonic, but here we are going to implement this method for supersonic,
+        // even the local region is subsonic
+        // auto T1 = fsi0j0.vel.y * (((fsi0j1.gas.p - fsi0jm1.gas.p) / (2*dy)) 
+        //   - fsi0j0.gas.rho * fsi0j0.gas.a * ((fsi0j1.vel.x - fsi0jm1.vel.x) / (2*dy)))
+        //   + gamma * fsi0j0.gas.p * ((fsi0j1.vel.y - fsi0jm1.vel.y) / (2*dy));
+        // auto K = sigma * fsi0j0.gas.a * (1 - (sqrt(fsi0j0.vel.x^^2 + fsi0j0.vel.y^^2) / fsi0j0.gas.a)^^2) / l_x;
+        // auto L1 = K * (fsi0j0.gas.p - p_target) - (1 - beta) * T1;
         
         // L2 ~ L4
         auto drhodx = (fsim2j0.gas.rho - 4 * fsim1j0.gas.rho + 3 * fsi0j0.gas.rho) / (2 * dx);
@@ -181,6 +183,7 @@ private:
         auto dudx = (fsim2j0.vel.x - 4 * fsim1j0.vel.x + 3 * fsi0j0.vel.x) / (2 * dx);
         auto dvdx = (fsim2j0.vel.y - 4 * fsim1j0.vel.y + 3 * fsi0j0.vel.y) / (2 * dx);
 
+        auto L1 = (fsi0j0.vel.x - fsi0j0.gas.a) * (dpdx - fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
         auto L2 = fsi0j0.vel.x * (fsi0j0.gas.a^^2 * drhodx - dpdx);
         auto L3 = fsi0j0.vel.x * dvdx;
         auto L4 = (fsi0j0.vel.x + fsi0j0.gas.a) * (dpdx + fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
