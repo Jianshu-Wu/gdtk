@@ -111,7 +111,7 @@ public:
                 f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                 c_im2 = f_tmp.left_cells[0];
                 gamma = gmodel.gamma(c_i.fs.gas);
-                if (f_idx == 0 && f_idx == (nfaces-1)) {
+                if (f_idx == 0 || f_idx == (nfaces-1)) {
                     // do something special at bottom corner
                     gc0.fs.copy_values_from(c_i.fs);
                     gc1.fs.copy_values_from(c_i.fs);
@@ -121,7 +121,7 @@ public:
                     c_jp1 = bc.faces[f_idx+1].left_cells[0];
                     c_jm1 = bc.faces[f_idx-1].left_cells[0];
                     double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
-                    double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].x.re;
+                    double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].y.re;
                     gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
                     characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
                 }
@@ -194,7 +194,7 @@ private:
          0.5*(L1/(fsi0j0.vel.x-fsi0j0.gas.a) + L4/(fsi0j0.vel.x+fsi0j0.gas.a)));
         cd.Dudx = ((L4/(fsi0j0.vel.x+fsi0j0.gas.a)) - (L1/(fsi0j0.vel.x-fsi0j0.gas.a))) 
          * (1 / (2*fsi0j0.gas.rho*fsi0j0.gas.a));  
-        cd.Dvdx = L3 / fsi0j0.vel.y;
+        cd.Dvdx = L3 / fsi0j0.vel.x;
 
         return;
     }
@@ -211,7 +211,7 @@ private:
         gc1.vel.y = -2*fsim1j0.vel.y - 3*fsi0j0.vel.y + 6*gc0.vel.y - 6*dx*cd.Dvdx; 
         gc0.gas.p = fsim1j0.gas.p + 2 * dx * cd.Dpdx;
         gc1.gas.p = -2*fsim1j0.gas.p - 3*fsi0j0.gas.p + 6*gc0.gas.p - 6*dx*cd.Dpdx;
-        gmodel.update_thermo_from_rhou(gc0.gas);
-        gmodel.update_thermo_from_rhou(gc1.gas);
+        gmodel.update_thermo_from_rhop(gc0.gas);
+        gmodel.update_thermo_from_rhop(gc1.gas);
    }
 }
