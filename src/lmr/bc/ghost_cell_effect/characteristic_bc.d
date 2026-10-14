@@ -74,15 +74,14 @@ public:
     // @nogc
     override void apply_unstructured_grid(double t, int gtl, int ftl)
     {
-    throw new Error("This Characteristic BC only working for structure grid.");
+        throw new Error("This Characteristic BC only working for structure grid.");
     }
 
     // @nogc
     override void apply_for_interface_structured_grid(double t, int gtl, int ftl, FVInterface f)
     {
-        
         throw new Error("This Characteristic BC only working for structure grid.");
-     }
+    }
 
     // @nogc
     override void apply_structured_grid(double t, int gtl, int ftl)
@@ -111,6 +110,8 @@ public:
                 f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                 c_im2 = f_tmp.left_cells[0];
                 gamma = gmodel.gamma(c_i.fs.gas);
+                gc0 = f.right_cells[0];
+                gc1 = f.right_cells[1];
                 if (f_idx == 0 || f_idx == (nfaces-1)) {
                     // do something special at bottom corner
                     gc0.fs.copy_values_from(c_i.fs);

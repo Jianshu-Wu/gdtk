@@ -254,6 +254,13 @@ function UserDefinedGhostCell:tojson()
    return str
 end
 
+CharacteristicEffect = GhostCellEffect:new()
+CharacteristicEffect.type = "characteristic_effect"
+function CharacteristicEffect:tojson()
+   local str = string.format('          {"type" : "%s"}', self.type)
+   return str
+end
+
 -- Base class and subclasses for BoundaryInterfaceEffect
 BoundaryInterfaceEffect = {
    type = ""
@@ -1582,7 +1589,7 @@ function OutFlowBC_Characteristic:new(o)
    end
    o = BoundaryCondition.new(self, o)
    o.is_wall_with_viscous_effects = false
-   o.preReconAction = { ExtrapolateCopy:new{xOrder = o.xOrder} }
+   o.preReconAction = { CharacteristicEffect:new{} }
    o.preSpatialDerivActionAtBndryFaces = { CopyCellData:new() }
    o.is_configured = true
    return o
