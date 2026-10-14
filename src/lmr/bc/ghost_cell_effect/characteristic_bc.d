@@ -131,8 +131,9 @@ public:
                 c_i = f.left_cells[0];
                 c_im1 = f.left_cells[1];
                 ijk = blk.to_ijk_indices_for_cell(c_im1.id);
-                f_tmp = blk.get_ifi(ijk[0], ijk[1]-1, ijk[2]);
-                c_im2 = f_tmp.right_cells[1];
+                c_im2 = blk.get_cell(ijk[0], ijk[1]-1, ijk[2]);
+                // f_tmp = blk.get_ifi(ijk[0], ijk[1]-1, ijk[2]);
+                // c_im2 = f_tmp.right_cells[1];
                 gc0 = f.right_cells[0];
                 gc1 = f.right_cells[1];
                 // ijk = blk.to_ijk_indices_for_cell(c_i.id);
