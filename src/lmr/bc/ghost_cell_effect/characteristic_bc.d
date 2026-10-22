@@ -68,7 +68,7 @@ public:
     // @nogc
     override void apply_for_interface_unstructured_grid(double t, int gtl, int ftl, FVInterface f)
     {
-    throw new Error("This Characteristic BC only working for structure grid.");
+        throw new Error("This Characteristic BC only working for structure grid.");
     }
     
     // @nogc
@@ -80,7 +80,7 @@ public:
     // @nogc
     override void apply_for_interface_structured_grid(double t, int gtl, int ftl, FVInterface f)
     {
-        throw new Error("This Characteristic BC only working for structure grid.");
+        return;
     }
 
     // @nogc
@@ -96,7 +96,8 @@ public:
         
         auto blk = cast(SFluidBlock) this.blk;
         assert(blk !is null, "Oops, this should be an SFluidBlock object.");
-        assert(blk.n_ghost_cell_layers == 2, "Oops, the ghost cell layers should be 2 for this characteristic BC");
+        assert(blk.n_ghost_cell_layers == 2,
+             "Oops, the ghost cell layers should be 2 for this characteristic BC");
         BoundaryCondition bc = blk.bc[which_boundary];
         size_t nfaces = bc.faces.length;
         foreach (f_idx, f; bc.faces) {
@@ -131,9 +132,9 @@ public:
                 c_i = f.left_cells[0];
                 c_im1 = f.left_cells[1];
                 ijk = blk.to_ijk_indices_for_cell(c_im1.id);
-                c_im2 = blk.get_cell(ijk[0], ijk[1]-1, ijk[2]);
-                // f_tmp = blk.get_ifi(ijk[0], ijk[1]-1, ijk[2]);
-                // c_im2 = f_tmp.right_cells[1];
+                // c_im2 = blk.get_cell(ijk[0], ijk[1]-1, ijk[2]);
+                f_tmp = blk.get_ifj(ijk[0], ijk[1], ijk[2]);
+                c_im2 = f_tmp.left_cells[0];
                 gc0 = f.right_cells[0];
                 gc1 = f.right_cells[1];
                 // ijk = blk.to_ijk_indices_for_cell(c_i.id);
