@@ -165,9 +165,10 @@ public:
                     c_i = f.left_cells[0];
                     gc0 = f.right_cells[0];
                     gc1 = f.right_cells[1];
-                    // ijk = blk.to_ijk_indices_for_cell(gc1.id);
+                    ijk = blk.to_ijk_indices_for_cell(gc1.id);
                     // f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
-                    gc2 = f.right_cells[3];
+                    // gc2 = f_tmp.right_cells[1];
+                    gc2 = f.right_cells[2];
                     ijk = blk.to_ijk_indices_for_cell(c_i.id);
                     f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                     c_im1 = f_tmp.left_cells[0];
@@ -187,7 +188,7 @@ public:
                         double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
                         double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].y.re;
                         gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
-                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);// need do something from here, to add the third layers.
+                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, gc2.fs, dx, cd);
                     }
                     break;
                 case Face.north:
@@ -199,11 +200,10 @@ public:
                     c_im2 = f_tmp.left_cells[0];
                     gc0 = f.right_cells[0];
                     gc1 = f.right_cells[1];
-                    // ijk = blk.to_ijk_indices_for_cell(gc1.id);
+                    ijk = blk.to_ijk_indices_for_cell(gc1.id);
                     // f_tmp = blk.get_ifj(ijk[0], ijk[1], ijk[2]);
+                    // gc2 = f_tmp.right_cells[1];
                     gc2 = f.right_cells[2];
-                    // ijk = blk.to_ijk_indices_for_cell(c_i.id);
-                    // f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                     gamma = gmodel.gamma(c_i.fs.gas);
                     if (f_idx == 0 || f_idx == (nfaces-1)) {
                         gc0.fs.copy_values_from(c_i.fs);
@@ -216,7 +216,7 @@ public:
                         double dy = c_i.pos[gtl].x.re - c_jp1.pos[gtl].x.re;
                         double dx = c_i.pos[gtl].y.re - c_im1.pos[gtl].y.re;
                         gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
-                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);// here as well
+                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, gc2.fs, dx, cd);
                     }
                     break;
                 case Face.south, Face.west, Face.top, Face.bottom:
