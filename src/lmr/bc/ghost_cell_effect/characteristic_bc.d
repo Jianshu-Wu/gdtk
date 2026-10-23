@@ -165,9 +165,9 @@ public:
                     c_i = f.left_cells[0];
                     gc0 = f.right_cells[0];
                     gc1 = f.right_cells[1];
-                    ijk = blk.to_ijk_indices_for_cell(gc1.id);
-                    f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
-                    gc2 = f_tmp.right_cells[1];
+                    // ijk = blk.to_ijk_indices_for_cell(gc1.id);
+                    // f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
+                    gc2 = f.right_cells[3];
                     ijk = blk.to_ijk_indices_for_cell(c_i.id);
                     f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                     c_im1 = f_tmp.left_cells[0];
@@ -187,7 +187,7 @@ public:
                         double dx = c_i.pos[gtl].x.re - c_im1.pos[gtl].x.re;
                         double dy = c_i.pos[gtl].y.re - c_jm1.pos[gtl].y.re;
                         gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
-                        characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);// need do something from here, to add the third layers.
+                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);// need do something from here, to add the third layers.
                     }
                     break;
                 case Face.north:
@@ -199,9 +199,9 @@ public:
                     c_im2 = f_tmp.left_cells[0];
                     gc0 = f.right_cells[0];
                     gc1 = f.right_cells[1];
-                    ijk = blk.to_ijk_indices_for_cell(gc1.id);
-                    f_tmp = blk.get_ifj(ijk[0], ijk[1], ijk[2]);
-                    gc2 = f_tmp.right_cells[1];
+                    // ijk = blk.to_ijk_indices_for_cell(gc1.id);
+                    // f_tmp = blk.get_ifj(ijk[0], ijk[1], ijk[2]);
+                    gc2 = f.right_cells[2];
                     // ijk = blk.to_ijk_indices_for_cell(c_i.id);
                     // f_tmp = blk.get_ifi(ijk[0], ijk[1], ijk[2]);
                     gamma = gmodel.gamma(c_i.fs.gas);
@@ -216,7 +216,7 @@ public:
                         double dy = c_i.pos[gtl].x.re - c_jp1.pos[gtl].x.re;
                         double dx = c_i.pos[gtl].y.re - c_im1.pos[gtl].y.re;
                         gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
-                        characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
+                        characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);// here as well
                     }
                     break;
                 case Face.south, Face.west, Face.top, Face.bottom:
@@ -224,6 +224,9 @@ public:
                     break;
                 }
             }    
+            else {
+                throw new Error("This Characteristic BC only working for 2/3 layers of ghost cells.");
+            }
         }
     }
 
@@ -304,6 +307,29 @@ private:
         gc1.vel.y = -2*fsim1j0.vel.y - 3*fsi0j0.vel.y + 6*gc0.vel.y - 6*dx*cd.Dvdx; 
         gc0.gas.p = fsim1j0.gas.p + 2 * dx * cd.Dpdx;
         gc1.gas.p = -2*fsim1j0.gas.p - 3*fsi0j0.gas.p + 6*gc0.gas.p - 6*dx*cd.Dpdx;
+        gmodel.update_thermo_from_rhop(gc0.gas);
+        gmodel.update_thermo_from_rhop(gc1.gas);
+   }
+    @nogc
+    void characteristic2(FlowState* fsi0j0, FlowState* fsim1j0,
+                   FlowState* gc0, FlowState* gc1, FlowState* gc2, double dx, in charac_deriv cd)
+    {
+        auto gmodel = blk.myConfig.gmodel;
+        gc0.gas.rho = fsim1j0.gas.rho + 2 * dx * cd.Drhodx;
+        gc1.gas.rho = -2*fsim1j0.gas.rho - 3*fsi0j0.gas.rho + 6*gc0.gas.rho - 6*dx*cd.Drhodx; 
+        gc2.gas.rho = 3*fsim1j0.gas.rho + 10*fsi0j0.gas.rho - 18*gc0.gas.rho - 6*gc1.gas.rho + 12*dx*cd.Drhodx;
+        
+        gc0.vel.x = fsim1j0.vel.x + 2 * dx * cd.Dudx;
+        gc1.vel.x = -2*fsim1j0.vel.x - 3*fsi0j0.vel.x + 6*gc0.vel.x - 6*dx*cd.Dudx; 
+        gc2.vel.x = 3*fsim1j0.vel.x + 10*fsi0j0.vel.x - 18*gc0.vel.x - 6*gc1.vel.x + 12*dx*cd.Dudx;
+        
+        gc0.vel.y = fsim1j0.vel.y + 2 * dx * cd.Dvdx;
+        gc1.vel.y = -2*fsim1j0.vel.y - 3*fsi0j0.vel.y + 6*gc0.vel.y - 6*dx*cd.Dvdx; 
+        gc2.vel.y = 3*fsim1j0.vel.y + 10*fsi0j0.vel.y - 18*gc0.vel.y - 6*gc1.vel.y + 12*dx*cd.Dvdx;
+
+        gc0.gas.p = fsim1j0.gas.p + 2 * dx * cd.Dpdx;
+        gc1.gas.p = -2*fsim1j0.gas.p - 3*fsi0j0.gas.p + 6*gc0.gas.p - 6*dx*cd.Dpdx;
+        gc2.gas.p = 3*fsim1j0.gas.p + 10*fsi0j0.gas.p - 18*gc0.gas.p - 6*gc1.gas.p + 12*dx*cd.Dpdx;
         gmodel.update_thermo_from_rhop(gc0.gas);
         gmodel.update_thermo_from_rhop(gc1.gas);
    }
