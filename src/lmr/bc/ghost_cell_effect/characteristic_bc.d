@@ -306,10 +306,10 @@ private:
         auto dudx = (fsim2j0.vel.y - 4 * fsim1j0.vel.y + 3 * fsi0j0.vel.y) / (2 * dx);
         auto dvdx = (fsim2j0.vel.x - 4 * fsim1j0.vel.x + 3 * fsi0j0.vel.x) / (2 * dx);
 
-        auto L1 = (fsi0j0.vel.y - fsi0j0.gas.a) * (dpdx - fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
+        auto L1 = (fsi0j0.vel.y - fsi0j0.gas.a) * (dpdx - fsi0j0.gas.rho * fsi0j0.gas.a * dvdx);
         auto L2 = fsi0j0.vel.y * (fsi0j0.gas.a^^2 * drhodx - dpdx);
-        auto L3 = fsi0j0.vel.y * dvdx;
-        auto L4 = (fsi0j0.vel.y + fsi0j0.gas.a) * (dpdx + fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
+        auto L3 = fsi0j0.vel.y * dudx;
+        auto L4 = (fsi0j0.vel.y + fsi0j0.gas.a) * (dpdx + fsi0j0.gas.rho * fsi0j0.gas.a * dvdx);
 
         // gradient for p, rho, u
         cd.Dpdx = 0.5 * ((L1/(fsi0j0.vel.y-fsi0j0.gas.a)) + (L4/(fsi0j0.vel.y+fsi0j0.gas.a)));
