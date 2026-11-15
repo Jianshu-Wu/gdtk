@@ -150,7 +150,7 @@ public:
                         c_jm1 = bc.faces[f_idx+1].left_cells[0];
                         double dy = c_i.pos[gtl].x.re - c_jp1.pos[gtl].x.re;
                         double dx = c_i.pos[gtl].y.re - c_im1.pos[gtl].y.re;
-                        gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
+                        gradient_north(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
                         characteristic(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, dx, cd);
                     }
                     break;
@@ -215,7 +215,7 @@ public:
                         c_jm1 = bc.faces[f_idx+1].left_cells[0];
                         double dy = c_i.pos[gtl].x.re - c_jp1.pos[gtl].x.re;
                         double dx = c_i.pos[gtl].y.re - c_im1.pos[gtl].y.re;
-                        gradient(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
+                        gradient_north(c_i.fs, c_im1.fs, c_im2.fs, c_jp1.fs, c_jm1.fs, gamma, dx, dy, cd);
                         characteristic2(c_i.fs, c_im1.fs, gc0.fs, gc1.fs, gc2.fs, dx, cd);
                     }
                     break;
@@ -295,6 +295,33 @@ private:
         return;
     }
     @nogc
+    immutable double fake = 1e-10;
+    void gradient_north(FlowState* fsi0j0, FlowState* fsim1j0, FlowState* fsim2j0,
+                  FlowState* fsi0j1, FlowState* fsi0jm1, number gamma, double dx, double dy,
+                  out charac_deriv cd)
+    {
+        // L2 ~ L4
+        auto drhodx = (fsim2j0.gas.rho - 4 * fsim1j0.gas.rho + 3 * fsi0j0.gas.rho) / (2 * dx);
+        auto dpdx = (fsim2j0.gas.p - 4 * fsim1j0.gas.p + 3 * fsi0j0.gas.p) / (2 * dx);
+        auto dudx = (fsim2j0.vel.y - 4 * fsim1j0.vel.y + 3 * fsi0j0.vel.y) / (2 * dx);
+        auto dvdx = (fsim2j0.vel.x - 4 * fsim1j0.vel.x + 3 * fsi0j0.vel.x) / (2 * dx);
+
+        auto L1 = (fsi0j0.vel.y - fsi0j0.gas.a) * (dpdx - fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
+        auto L2 = fsi0j0.vel.y * (fsi0j0.gas.a^^2 * drhodx - dpdx);
+        auto L3 = fsi0j0.vel.y * dvdx;
+        auto L4 = (fsi0j0.vel.y + fsi0j0.gas.a) * (dpdx + fsi0j0.gas.rho * fsi0j0.gas.a * dudx);
+
+        // gradient for p, rho, u
+        cd.Dpdx = 0.5 * ((L1/(fsi0j0.vel.y-fsi0j0.gas.a)) + (L4/(fsi0j0.vel.y+fsi0j0.gas.a)));
+        cd.Drhodx = (1/fsi0j0.gas.a^^2) * ((L2/(fsi0j0.vel.y+fake)) +
+         0.5*(L1/(fsi0j0.vel.y-fsi0j0.gas.a) + L4/(fsi0j0.vel.y+fsi0j0.gas.a)));
+        cd.Dudx = ((L4/(fsi0j0.vel.y+fsi0j0.gas.a)) - (L1/(fsi0j0.vel.y-fsi0j0.gas.a))) 
+         * (1 / (2*fsi0j0.gas.rho*fsi0j0.gas.a));  
+        cd.Dvdx = L3 / (fsi0j0.vel.y+fake);
+
+        return;
+    }
+    @nogc
     void characteristic(FlowState* fsi0j0, FlowState* fsim1j0,
                    FlowState* gc0, FlowState* gc1, double dx, in charac_deriv cd)
     {
@@ -317,20 +344,21 @@ private:
         auto gmodel = blk.myConfig.gmodel;
         gc0.gas.rho = fsim1j0.gas.rho + 2 * dx * cd.Drhodx;
         gc1.gas.rho = -2*fsim1j0.gas.rho - 3*fsi0j0.gas.rho + 6*gc0.gas.rho - 6*dx*cd.Drhodx; 
-        gc2.gas.rho = 3*fsim1j0.gas.rho + 10*fsi0j0.gas.rho - 18*gc0.gas.rho - 6*gc1.gas.rho + 12*dx*cd.Drhodx;
+        gc2.gas.rho = 3*fsim1j0.gas.rho + 10*fsi0j0.gas.rho - 18*gc0.gas.rho + 6*gc1.gas.rho + 12*dx*cd.Drhodx;
         
         gc0.vel.x = fsim1j0.vel.x + 2 * dx * cd.Dudx;
         gc1.vel.x = -2*fsim1j0.vel.x - 3*fsi0j0.vel.x + 6*gc0.vel.x - 6*dx*cd.Dudx; 
-        gc2.vel.x = 3*fsim1j0.vel.x + 10*fsi0j0.vel.x - 18*gc0.vel.x - 6*gc1.vel.x + 12*dx*cd.Dudx;
+        gc2.vel.x = 3*fsim1j0.vel.x + 10*fsi0j0.vel.x - 18*gc0.vel.x + 6*gc1.vel.x + 12*dx*cd.Dudx;
         
         gc0.vel.y = fsim1j0.vel.y + 2 * dx * cd.Dvdx;
         gc1.vel.y = -2*fsim1j0.vel.y - 3*fsi0j0.vel.y + 6*gc0.vel.y - 6*dx*cd.Dvdx; 
-        gc2.vel.y = 3*fsim1j0.vel.y + 10*fsi0j0.vel.y - 18*gc0.vel.y - 6*gc1.vel.y + 12*dx*cd.Dvdx;
+        gc2.vel.y = 3*fsim1j0.vel.y + 10*fsi0j0.vel.y - 18*gc0.vel.y + 6*gc1.vel.y + 12*dx*cd.Dvdx;
 
         gc0.gas.p = fsim1j0.gas.p + 2 * dx * cd.Dpdx;
         gc1.gas.p = -2*fsim1j0.gas.p - 3*fsi0j0.gas.p + 6*gc0.gas.p - 6*dx*cd.Dpdx;
-        gc2.gas.p = 3*fsim1j0.gas.p + 10*fsi0j0.gas.p - 18*gc0.gas.p - 6*gc1.gas.p + 12*dx*cd.Dpdx;
+        gc2.gas.p = 3*fsim1j0.gas.p + 10*fsi0j0.gas.p - 18*gc0.gas.p + 6*gc1.gas.p + 12*dx*cd.Dpdx;
         gmodel.update_thermo_from_rhop(gc0.gas);
         gmodel.update_thermo_from_rhop(gc1.gas);
+        gmodel.update_thermo_from_rhop(gc2.gas);
    }
 }
